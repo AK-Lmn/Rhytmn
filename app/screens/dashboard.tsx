@@ -2,13 +2,17 @@
 
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { ArrowRight, BellRing, CalendarDays, Droplets, Plus, Sparkles, Toilet } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ActivityChart } from "../components/charts";
 import { IconBadge, MetricCard, ProgressRing } from "../components/ui";
-import { saveRemoteLog } from "../lib/firestore-service";
 import { calculateStreak, generateInsights, hydrationTotal, sevenDaySeries } from "../lib/insights";
 import { useAppStore } from "../store/app-store";
 import type { HealthLog, WaterLog } from "../types";
+
+const ActivityChart = dynamic(
+  () => import("../components/charts").then((module) => module.ActivityChart),
+  { loading: () => <div className="chart-loading" role="status">Loading activity chart…</div> },
+);
 
 const description = (log: HealthLog) => {
   if (log.kind === "poop") return `Bristol type ${log.bristolType} · ${log.amount}`;
@@ -65,7 +69,10 @@ export function DashboardScreen() {
       demo: mode === "demo",
     };
     upsertLog(log);
-    if (profile && mode === "firebase") await saveRemoteLog(profile.uid, log);
+    if (profile && mode === "firebase") {
+      const { saveRemoteLog } = await import("../lib/firestore-service");
+      await saveRemoteLog(profile.uid, log);
+    }
     showToast(`${amountMl} ml added`);
   };
 

@@ -1,10 +1,8 @@
 "use client";
 
-import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useRef } from "react";
-import { auth } from "../lib/firebase";
-import { saveProfile, subscribeToUserLogs } from "../lib/firestore-service";
 import { useAppStore } from "../store/app-store";
+import { PwaLifecycle } from "./pwa-lifecycle";
 
 function effectiveTheme(theme: "light" | "dark" | "system") {
   if (theme !== "system") return theme;
@@ -31,43 +29,66 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   }, [preferences.theme]);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!auth) {
-      initialAuthCheck.current = true;
-      return;
-    }
+    let disposed = false;
     let stopSync: () => void = () => undefined;
-    return onAuthStateChanged(auth, (user) => {
-      stopSync();
-      if (user) {
-        const profile = {
-          uid: user.uid,
-          email: user.email ?? undefined,
-          preferredName: user.displayName?.split(" ")[0] || preferences.preferredName || "You",
-          createdAt: user.metadata.creationTime ?? new Date().toISOString(),
-          demo: false,
-        };
-        setMode("firebase");
-        setProfile(profile);
-        void saveProfile(user.uid, profile, preferences);
-        stopSync = subscribeToUserLogs(
-          user.uid,
-          setLogs,
-          () => showToast("Sync paused. Your changes will retry when you reconnect."),
-        );
-      } else if (mode === "firebase") {
-        setMode("anonymous");
-        setProfile(null);
-        setLogs([]);
+    let stopAuth: () => void = () => undefined;
+    const initializeAuth = async () => {
+      const [{ onAuthStateChanged }, { auth }, { saveProfile, subscribeToUserLogs }] = await Promise.all([
+        import("firebase/auth"),
+        import("../lib/firebase"),
+        import("../lib/firestore-service"),
+      ]);
+      if (disposed) return;
+      if (!auth) {
+        initialAuthCheck.current = true;
+        return;
       }
-      initialAuthCheck.current = true;
-    });
+      stopAuth = onAuthStateChanged(auth, (user) => {
+        stopSync();
+        if (user) {
+          const profile = {
+            uid: user.uid,
+            email: user.email ?? undefined,
+            preferredName: user.displayName?.split(" ")[0] || preferences.preferredName || "You",
+            createdAt: user.metadata.creationTime ?? new Date().toISOString(),
+            demo: false,
+          };
+          setMode("firebase");
+          setProfile(profile);
+          void saveProfile(user.uid, profile, preferences);
+          stopSync = subscribeToUserLogs(
+            user.uid,
+            setLogs,
+            () => showToast("Sync paused. Your changes will retry when you reconnect."),
+          );
+        } else if (mode === "firebase") {
+          setMode("anonymous");
+          setProfile(null);
+          setLogs([]);
+        }
+        initialAuthCheck.current = true;
+      });
+    };
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const handle = idleWindow.requestIdleCallback
+      ? idleWindow.requestIdleCallback(() => void initializeAuth(), { timeout: 1200 })
+      : window.setTimeout(() => void initializeAuth(), 250);
+    return () => {
+      disposed = true;
+      if (idleWindow.cancelIdleCallback) idleWindow.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
+      stopAuth();
+      stopSync();
+    };
   }, [mode, preferences, setLogs, setMode, setProfile, showToast]);
 
-  return children;
+  return (
+    <>
+      {children}
+      <PwaLifecycle />
+    </>
+  );
 }

@@ -1,9 +1,54 @@
 "use client";
 
 import { AlertTriangle, Check, Droplets, FileQuestion, Plus, Toilet, X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAppStore } from "../store/app-store";
 import type { HealthLog, SafetyWarning } from "../types";
+
+function useDialogFocus(open: boolean, onClose: () => void) {
+  const dialogRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    const oldOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusable = () => Array.from(
+      dialog?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? [],
+    );
+    focusable()[0]?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = oldOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+      previous?.focus();
+    };
+  }, [onClose, open]);
+  return dialogRef;
+}
 
 export function IconBadge({ kind }: { kind: HealthLog["kind"] }) {
   const icon =
@@ -101,16 +146,17 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const dialogRef = useDialogFocus(open, onCancel);
   if (!open) return null;
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onCancel}>
-      <section className="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" onMouseDown={(event) => event.stopPropagation()}>
+      <section ref={dialogRef} className="modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-description" onMouseDown={(event) => event.stopPropagation()}>
         <span className={danger ? "modal-icon danger" : "modal-icon"}><AlertTriangle /></span>
         <h2 id="confirm-title">{title}</h2>
-        <p>{text}</p>
+        <p id="confirm-description">{text}</p>
         <div className="modal-actions">
-          <button className="button ghost" onClick={onCancel}>Cancel</button>
-          <button className={`button ${danger ? "danger" : "primary"}`} onClick={onConfirm}>{confirmLabel}</button>
+          <button className="button ghost" type="button" onClick={onCancel}>Cancel</button>
+          <button className={`button ${danger ? "danger" : "primary"}`} type="button" onClick={onConfirm}>{confirmLabel}</button>
         </div>
       </section>
     </div>
@@ -126,22 +172,23 @@ export function SafetyModal({
   onAcknowledge: () => void;
   onCancel: () => void;
 }) {
+  const dialogRef = useDialogFocus(Boolean(warning), onCancel);
   if (!warning) return null;
   return (
     <div className="modal-backdrop" role="presentation">
-      <section className="modal safety-modal" role="alertdialog" aria-modal="true" aria-labelledby="safety-title">
+      <section ref={dialogRef} className="modal safety-modal" role="alertdialog" aria-modal="true" aria-labelledby="safety-title" aria-describedby="safety-description">
         <span className="modal-icon warning"><AlertTriangle /></span>
         <p className="eyebrow">Safety check</p>
         <h2 id="safety-title">{warning.title}</h2>
-        <p>{warning.message}</p>
+        <p id="safety-description">{warning.message}</p>
         <ul>{warning.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
         <div className="emergency-note">
           If you feel severely unwell or symptoms may be life-threatening, seek immediate local emergency care.
         </div>
         <p className="fine-print">Rhythm does not diagnose conditions or replace professional medical advice.</p>
         <div className="modal-actions">
-          <button className="button ghost" onClick={onCancel}>Review entry</button>
-          <button className="button primary" onClick={onAcknowledge}>I understand, save</button>
+          <button className="button ghost" type="button" onClick={onCancel}>Review entry</button>
+          <button className="button primary" type="button" onClick={onAcknowledge}>I understand, save</button>
         </div>
       </section>
     </div>

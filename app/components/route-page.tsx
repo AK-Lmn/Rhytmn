@@ -1,18 +1,24 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { AppShell } from "./app-shell";
-import { AddMenuScreen } from "../screens/add-menu";
-import { AuthScreen } from "../screens/auth";
-import { DashboardScreen } from "../screens/dashboard";
-import { EntryDetailScreen } from "../screens/entry-detail";
-import { ExportScreen } from "../screens/export";
-import { HistoryScreen } from "../screens/history";
-import { InsightsScreen } from "../screens/insights";
-import { LandingScreen } from "../screens/landing";
-import { CheckInFormScreen, NoteFormScreen, PeeFormScreen, PoopFormScreen, WaterFormScreen } from "../screens/log-forms";
-import { OnboardingScreen } from "../screens/onboarding";
-import { PrivacyScreen } from "../screens/privacy";
-import { SettingsScreen } from "../screens/settings";
+
+const LandingScreen = dynamic(() => import("../screens/landing").then((module) => module.LandingScreen));
+const AuthScreen = dynamic(() => import("../screens/auth").then((module) => module.AuthScreen));
+const OnboardingScreen = dynamic(() => import("../screens/onboarding").then((module) => module.OnboardingScreen));
+const PrivacyScreen = dynamic(() => import("../screens/privacy").then((module) => module.PrivacyScreen));
+const DashboardScreen = dynamic(() => import("../screens/dashboard").then((module) => module.DashboardScreen));
+const HistoryScreen = dynamic(() => import("../screens/history").then((module) => module.HistoryScreen));
+const AddMenuScreen = dynamic(() => import("../screens/add-menu").then((module) => module.AddMenuScreen));
+const PoopFormScreen = dynamic(() => import("../screens/log-forms").then((module) => module.PoopFormScreen));
+const PeeFormScreen = dynamic(() => import("../screens/log-forms").then((module) => module.PeeFormScreen));
+const WaterFormScreen = dynamic(() => import("../screens/log-forms").then((module) => module.WaterFormScreen));
+const NoteFormScreen = dynamic(() => import("../screens/log-forms").then((module) => module.NoteFormScreen));
+const CheckInFormScreen = dynamic(() => import("../screens/log-forms").then((module) => module.CheckInFormScreen));
+const EntryDetailScreen = dynamic(() => import("../screens/entry-detail").then((module) => module.EntryDetailScreen));
+const InsightsScreen = dynamic(() => import("../screens/insights").then((module) => module.InsightsScreen));
+const SettingsScreen = dynamic(() => import("../screens/settings").then((module) => module.SettingsScreen));
+const ExportScreen = dynamic(() => import("../screens/export").then((module) => module.ExportScreen));
 
 export type AppRoute =
   | "landing" | "login" | "register" | "forgot" | "onboarding" | "home"

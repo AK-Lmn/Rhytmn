@@ -2,11 +2,20 @@
 
 import { differenceInCalendarDays, format, parseISO, subDays } from "date-fns";
 import { Activity, ArrowDownRight, ArrowUpRight, CalendarCheck, Droplets, Info, Sparkles, TrendingUp } from "lucide-react";
-import { BristolDistribution, HydrationChart } from "../components/charts";
+import dynamic from "next/dynamic";
 import { EmptyState, PageHeader } from "../components/ui";
 import { BRISTOL_TYPES } from "../lib/constants";
 import { calculateStreak, generateInsights, sevenDaySeries } from "../lib/insights";
 import { useAppStore } from "../store/app-store";
+
+const HydrationChart = dynamic(
+  () => import("../components/charts").then((module) => module.HydrationChart),
+  { loading: () => <div className="chart-loading" role="status">Loading hydration chart…</div> },
+);
+const BristolDistribution = dynamic(
+  () => import("../components/charts").then((module) => module.BristolDistribution),
+  { loading: () => <div className="chart-loading" role="status">Loading distribution chart…</div> },
+);
 
 function frequency(list: string[]) {
   const counts = list.reduce<Record<string, number>>((result, item) => ({ ...result, [item]: (result[item] ?? 0) + 1 }), {});

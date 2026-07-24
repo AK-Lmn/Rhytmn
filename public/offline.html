@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#315f56">
+    <title>Rhythm is offline</title>
+    <style>
+      :root { color-scheme: light dark; font-family: system-ui, sans-serif; background: #f7f4ee; color: #22322e; }
+      body { min-height: 100dvh; display: grid; place-items: center; margin: 0; padding: max(24px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); box-sizing: border-box; }
+      main { width: min(100%, 460px); padding: 32px; border: 1px solid #dfded7; border-radius: 24px; background: #fffdf9; box-shadow: 0 20px 60px rgba(52,63,57,.12); text-align: center; }
+      .mark { width: 64px; height: 64px; display: grid; place-items: center; margin: 0 auto 22px; border-radius: 18px; background: #315f56; }
+      .dots { position: relative; width: 40px; height: 36px; }
+      .dots i { position: absolute; width: 14px; height: 14px; border-radius: 50%; }
+      .dots i:nth-child(1) { left: 2px; top: 13px; background: #f6d6a6; }
+      .dots i:nth-child(2) { left: 14px; top: 5px; background: #e69d78; }
+      .dots i:nth-child(3) { right: 2px; bottom: 3px; background: #8bc1b0; }
+      h1 { margin: 0 0 10px; font-size: clamp(28px, 8vw, 38px); letter-spacing: -.04em; }
+      p { margin: 0 0 24px; color: #71807b; line-height: 1.6; }
+      a { display: inline-flex; min-height: 48px; align-items: center; justify-content: center; padding: 0 20px; border-radius: 14px; background: #315f56; color: white; font-weight: 750; text-decoration: none; }
+      small { display: block; margin-top: 20px; color: #71807b; }
+      @media (prefers-color-scheme: dark) {
+        :root { background: #15201d; color: #f0f4f1; }
+        main { border-color: #34453f; background: #1c2925; box-shadow: 0 20px 60px rgba(0,0,0,.28); }
+        p, small { color: #a5b1ac; }
+        a { background: #83c0ad; color: #15201d; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="mark" aria-hidden="true"><span class="dots"><i></i><i></i><i></i></span></span>
+      <h1>You’re still in your rhythm.</h1>
+      <p>Rhythm can’t reach the network right now. Previously loaded app screens, saved drafts, and fictional demo data remain available on this device.</p>
+      <a href="/home">Open Rhythm</a>
+      <small>Signed-in changes will sync again after you reconnect.</small>
+    </main>
+  </body>
+</html>
