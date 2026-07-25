@@ -93,6 +93,7 @@ describe("critical mobile shell", () => {
 
   it("uses one safe-area-aware mobile header height for the fixed bar and content offset", async () => {
     const css = await readFile("app/globals.css", "utf8");
+    const shell = await readFile("app/components/app-shell.tsx", "utf8");
     const targetWidths = [320, 360, 375, 390, 412, 430];
 
     expect(targetWidths.every((width) => width <= 900)).toBe(true);
@@ -112,6 +113,9 @@ describe("critical mobile shell", () => {
     expect(css).toContain(
       ".mobile-topbar .logo { height: var(--mobile-header-row-height)",
     );
+    expect(shell).toContain('className="mobile-topbar-lock"');
+    expect(css).toContain(".mobile-topbar-lock { width: 44px; height: 44px");
+    expect(css).not.toContain(".mobile-topbar > a { width: 44px");
     expect(css).not.toMatch(/\.page\s*\{[^}]*safe-area-inset-top/);
   });
 

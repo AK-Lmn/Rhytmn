@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="mobile-topbar">
         <Logo />
-        <a href="/privacy" aria-label="Privacy settings"><LockKeyhole size={20} /></a>
+        <a className="mobile-topbar-lock" href="/privacy" aria-label="Privacy settings"><LockKeyhole size={20} /></a>
       </div>
 
       <main>{children}</main>
