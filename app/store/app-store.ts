@@ -3,17 +3,22 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createDemoLogs } from "../data/demo";
-import { DEFAULT_PREFERENCES } from "../lib/constants";
+import { DEFAULT_PREFERENCES, DEMO_PREFERENCES } from "../lib/constants";
 import type { HealthLog, Preferences, UserProfile } from "../types";
 
-interface AppState {
+export type AccountStatus = "checking" | "signedOut" | "loading" | "ready" | "error";
+
+export interface AppState {
   mode: "anonymous" | "demo" | "firebase";
+  accountStatus: AccountStatus;
   profile: UserProfile | null;
   preferences: Preferences;
   logs: HealthLog[];
   toast: string | null;
-  setMode: (mode: AppState["mode"]) => void;
-  setProfile: (profile: UserProfile | null) => void;
+  beginAuthenticatedSession: () => void;
+  resolveAuthenticatedSession: (profile: UserProfile, preferences: Preferences) => void;
+  failAuthenticatedSession: () => void;
+  completeSignedOutSession: () => void;
   setPreferences: (preferences: Partial<Preferences>) => void;
   setLogs: (logs: HealthLog[]) => void;
   upsertLog: (log: HealthLog) => void;
@@ -25,18 +30,73 @@ interface AppState {
   clearToast: () => void;
 }
 
+type PersistedSession = Pick<AppState, "mode" | "profile" | "preferences" | "logs">;
+
+export function sanitizePersistedSession(value: unknown): Partial<AppState> {
+  const persisted = value as Partial<PersistedSession> | undefined;
+  if (persisted?.mode !== "demo" || persisted.profile?.demo !== true) return {};
+  return {
+    mode: "demo",
+    accountStatus: "ready",
+    profile: persisted.profile,
+    preferences: { ...DEMO_PREFERENCES, ...persisted.preferences, preferredName: "Alex" },
+    logs: Array.isArray(persisted.logs) ? persisted.logs : [],
+  };
+}
+
+export function selectDisplayName(state: Pick<AppState, "mode" | "profile" | "preferences">) {
+  if (state.mode === "firebase") return state.profile?.preferredName ?? "";
+  return state.profile?.preferredName ?? state.preferences.preferredName;
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       mode: "anonymous",
+      accountStatus: "checking",
       profile: null,
       preferences: { ...DEFAULT_PREFERENCES },
       logs: [],
       toast: null,
-      setMode: (mode) => set({ mode }),
-      setProfile: (profile) => set({ profile }),
+      beginAuthenticatedSession: () =>
+        set({
+          mode: "firebase",
+          accountStatus: "loading",
+          profile: null,
+          preferences: { ...DEFAULT_PREFERENCES },
+          logs: [],
+        }),
+      resolveAuthenticatedSession: (profile, preferences) =>
+        set({
+          mode: "firebase",
+          accountStatus: "ready",
+          profile,
+          preferences: { ...preferences, preferredName: profile.preferredName },
+        }),
+      failAuthenticatedSession: () =>
+        set({ mode: "firebase", accountStatus: "error", profile: null, logs: [] }),
+      completeSignedOutSession: () =>
+        set((state) =>
+          state.mode === "demo"
+            ? { accountStatus: "ready" }
+            : {
+                mode: "anonymous",
+                accountStatus: "signedOut",
+                profile: null,
+                preferences: { ...DEFAULT_PREFERENCES },
+                logs: [],
+              },
+        ),
       setPreferences: (preferences) =>
-        set((state) => ({ preferences: { ...state.preferences, ...preferences } })),
+        set((state) => ({
+          preferences: { ...state.preferences, ...preferences },
+          profile:
+            state.mode === "firebase" &&
+            state.profile &&
+            typeof preferences.preferredName === "string"
+              ? { ...state.profile, preferredName: preferences.preferredName }
+              : state.profile,
+        })),
       setLogs: (logs) => set({ logs }),
       upsertLog: (log) =>
         set((state) => ({
@@ -49,18 +109,20 @@ export const useAppStore = create<AppState>()(
       startDemo: () =>
         set({
           mode: "demo",
+          accountStatus: "ready",
           profile: {
             uid: "demo-user",
             preferredName: "Alex",
             createdAt: new Date().toISOString(),
             demo: true,
           },
-          preferences: { ...DEFAULT_PREFERENCES },
+          preferences: { ...DEMO_PREFERENCES },
           logs: createDemoLogs(),
         }),
       resetSession: () =>
         set({
           mode: "anonymous",
+          accountStatus: "signedOut",
           profile: null,
           preferences: { ...DEFAULT_PREFERENCES },
           logs: [],
@@ -70,11 +132,24 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "rhythm-private-store",
-      partialize: (state) => ({
-        mode: state.mode,
-        profile: state.profile,
-        preferences: state.preferences,
-        logs: state.mode === "demo" ? state.logs : [],
+      version: 2,
+      partialize: (state) =>
+        state.mode === "demo"
+          ? {
+              mode: state.mode,
+              profile: state.profile,
+              preferences: state.preferences,
+              logs: state.logs,
+            }
+          : {
+              mode: "anonymous",
+              profile: null,
+              preferences: { ...DEFAULT_PREFERENCES },
+              logs: [],
+            },
+      merge: (persisted, current) => ({
+        ...current,
+        ...sanitizePersistedSession(persisted),
       }),
     },
   ),

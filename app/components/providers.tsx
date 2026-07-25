@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useAppStore } from "../store/app-store";
 import { PwaLifecycle } from "./pwa-lifecycle";
 
@@ -9,14 +9,27 @@ function effectiveTheme(theme: "light" | "dark" | "system") {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+function ProfileGate({ failed = false }: { failed?: boolean }) {
+  return (
+    <main className="auth-panel profile-gate">
+      <section className="auth-card profile-loading" role="status" aria-live="polite">
+        <span className="logo-mark large" aria-hidden="true"><i /><i /><i /></span>
+        <h1>{failed ? "We couldn’t load your profile" : "Opening your private space…"}</h1>
+        <p>
+          {failed
+            ? "Your saved data was not changed. Check your connection and try again."
+            : "Loading your saved profile and settings."}
+        </p>
+        {failed ? <button onClick={() => window.location.reload()}>Try again</button> : null}
+      </section>
+    </main>
+  );
+}
+
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const preferences = useAppStore((state) => state.preferences);
   const mode = useAppStore((state) => state.mode);
-  const setMode = useAppStore((state) => state.setMode);
-  const setProfile = useAppStore((state) => state.setProfile);
-  const setLogs = useAppStore((state) => state.setLogs);
-  const showToast = useAppStore((state) => state.showToast);
-  const initialAuthCheck = useRef(false);
+  const accountStatus = useAppStore((state) => state.accountStatus);
 
   useEffect(() => {
     const apply = () => {
@@ -30,64 +43,80 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let disposed = false;
+    let generation = 0;
     let stopSync: () => void = () => undefined;
     let stopAuth: () => void = () => undefined;
-    const initializeAuth = async () => {
-      const [{ onAuthStateChanged }, { auth }, { saveProfile, subscribeToUserLogs }] = await Promise.all([
+
+    void (async () => {
+      const [
+        { onAuthStateChanged },
+        { auth },
+        { loadAuthenticatedAccount, subscribeToUserLogs },
+      ] = await Promise.all([
         import("firebase/auth"),
         import("../lib/firebase"),
         import("../lib/firestore-service"),
       ]);
       if (disposed) return;
       if (!auth) {
-        initialAuthCheck.current = true;
+        useAppStore.getState().completeSignedOutSession();
         return;
       }
-      stopAuth = onAuthStateChanged(auth, (user) => {
+
+      stopAuth = onAuthStateChanged(auth, async (user) => {
+        const currentGeneration = ++generation;
         stopSync();
-        if (user) {
-          const profile = {
+        stopSync = () => undefined;
+
+        if (!user) {
+          useAppStore.getState().completeSignedOutSession();
+          return;
+        }
+
+        useAppStore.getState().beginAuthenticatedSession();
+        try {
+          const account = await loadAuthenticatedAccount({
             uid: user.uid,
             email: user.email ?? undefined,
-            preferredName: user.displayName?.split(" ")[0] || preferences.preferredName || "You",
-            createdAt: user.metadata.creationTime ?? new Date().toISOString(),
-            demo: false,
-          };
-          setMode("firebase");
-          setProfile(profile);
-          void saveProfile(user.uid, profile, preferences);
+            displayName: user.displayName ?? undefined,
+            createdAt: user.metadata.creationTime ?? undefined,
+          });
+          if (disposed || currentGeneration !== generation) return;
+
+          useAppStore
+            .getState()
+            .resolveAuthenticatedSession(account.profile, account.preferences);
           stopSync = subscribeToUserLogs(
             user.uid,
-            setLogs,
-            () => showToast("Sync paused. Your changes will retry when you reconnect."),
+            (logs) => useAppStore.getState().setLogs(logs),
+            () =>
+              useAppStore
+                .getState()
+                .showToast("Sync paused. Your changes will retry when you reconnect."),
           );
-        } else if (mode === "firebase") {
-          setMode("anonymous");
-          setProfile(null);
-          setLogs([]);
+        } catch {
+          if (disposed || currentGeneration !== generation) return;
+          useAppStore.getState().failAuthenticatedSession();
         }
-        initialAuthCheck.current = true;
       });
-    };
-    const idleWindow = window as Window & {
-      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
-    const handle = idleWindow.requestIdleCallback
-      ? idleWindow.requestIdleCallback(() => void initializeAuth(), { timeout: 1200 })
-      : window.setTimeout(() => void initializeAuth(), 250);
+    })();
+
     return () => {
       disposed = true;
-      if (idleWindow.cancelIdleCallback) idleWindow.cancelIdleCallback(handle);
-      else window.clearTimeout(handle);
+      generation += 1;
       stopAuth();
       stopSync();
     };
-  }, [mode, preferences, setLogs, setMode, setProfile, showToast]);
+  }, []);
+
+  const waiting =
+    accountStatus === "checking" ||
+    (mode === "firebase" && accountStatus === "loading");
+  const failed = mode === "firebase" && accountStatus === "error";
 
   return (
     <>
-      {children}
+      {waiting || failed ? <ProfileGate failed={failed} /> : children}
       <PwaLifecycle />
     </>
   );

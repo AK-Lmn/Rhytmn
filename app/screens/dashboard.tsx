@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { IconBadge, MetricCard, ProgressRing } from "../components/ui";
 import { calculateStreak, generateInsights, hydrationTotal, sevenDaySeries } from "../lib/insights";
-import { useAppStore } from "../store/app-store";
+import { selectDisplayName, useAppStore } from "../store/app-store";
 import type { HealthLog, WaterLog } from "../types";
 
 const ActivityChart = dynamic(
@@ -26,6 +26,7 @@ export function DashboardScreen() {
   const logs = useAppStore((state) => state.logs);
   const preferences = useAppStore((state) => state.preferences);
   const profile = useAppStore((state) => state.profile);
+  const displayName = useAppStore(selectDisplayName);
   const mode = useAppStore((state) => state.mode);
   const upsertLog = useAppStore((state) => state.upsertLog);
   const showToast = useAppStore((state) => state.showToast);
@@ -51,7 +52,7 @@ export function DashboardScreen() {
   const lastPee = logs.find((log) => log.kind === "pee");
   const series = sevenDaySeries(logs);
   const insight = generateInsights(logs, preferences.waterGoalMl)[0];
-  const firstName = profile?.preferredName || preferences.preferredName || "there";
+  const firstName = displayName || "there";
 
   const quickWater = async (amountMl: number) => {
     const now = new Date();

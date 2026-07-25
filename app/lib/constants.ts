@@ -61,8 +61,10 @@ export const DRINK_TYPES = [
   { name: "Other", factor: 0.75 },
 ] as const;
 
-export const DEFAULT_PREFERENCES = {
-  preferredName: "Alex",
+import type { Preferences } from "../types";
+
+export const DEFAULT_PREFERENCES: Preferences = {
+  preferredName: "You",
   waterGoalMl: 2200,
   theme: "system",
   reminders: true,
@@ -75,4 +77,13 @@ export const DEFAULT_PREFERENCES = {
   dateFormat: "MMM d, yyyy",
   units: "metric",
   trackingGoal: "Understand my daily rhythm",
-} as const;
+};
+
+export const DEMO_PREFERENCES: Preferences = {
+  ...DEFAULT_PREFERENCES,
+  preferredName: "Alex",
+};
+
+export function createAccountPreferences(preferredName: string): Preferences {
+  return { ...DEFAULT_PREFERENCES, preferredName };
+}

@@ -6,21 +6,30 @@ import { useState } from "react";
 import { ConfirmDialog, PageHeader } from "../components/ui";
 import { auth } from "../lib/firebase";
 import { deleteAllRemoteData, saveProfile } from "../lib/firestore-service";
-import { useAppStore } from "../store/app-store";
+import { selectDisplayName, useAppStore } from "../store/app-store";
 import type { Preferences } from "../types";
 
 export function SettingsScreen() {
   const profile = useAppStore((state) => state.profile);
   const mode = useAppStore((state) => state.mode);
+  const accountStatus = useAppStore((state) => state.accountStatus);
   const preferences = useAppStore((state) => state.preferences);
+  const displayName = useAppStore(selectDisplayName);
   const setPreferences = useAppStore((state) => state.setPreferences);
   const showToast = useAppStore((state) => state.showToast);
   const [confirm, setConfirm] = useState<"data" | "account" | null>(null);
 
   const update = async (patch: Partial<Preferences>) => {
     setPreferences(patch);
-    const next = { ...preferences, ...patch };
-    if (profile && mode === "firebase") await saveProfile(profile.uid, { ...profile, preferredName: next.preferredName }, next);
+    const state = useAppStore.getState();
+    const next = state.preferences;
+    if (state.profile && state.mode === "firebase" && state.accountStatus === "ready") {
+      await saveProfile(
+        state.profile.uid,
+        { ...state.profile, preferredName: next.preferredName },
+        next,
+      );
+    }
     showToast("Settings saved");
   };
   const logout = async () => {
@@ -48,7 +57,7 @@ export function SettingsScreen() {
         <div className="settings-main">
           <article className="settings-card card">
             <div className="settings-title"><span><UserRound /></span><div><h2>Profile</h2><p>Only what Rhythm needs to personalize your space.</p></div></div>
-            <label>Preferred name<input value={preferences.preferredName} onChange={(event) => setPreferences({ preferredName: event.target.value })} onBlur={() => void update({ preferredName: preferences.preferredName })} /></label>
+            <label>Preferred name<input value={displayName} onChange={(event) => setPreferences({ preferredName: event.target.value })} onBlur={() => void update({ preferredName: displayName })} /></label>
             <label>Email<input value={profile?.email ?? (mode === "demo" ? "demo@rhythm.local" : "")} disabled /></label>
             {mode === "demo" && <div className="setup-note">This is a fictional demo profile. No account exists.</div>}
           </article>
@@ -88,7 +97,7 @@ export function SettingsScreen() {
         </div>
 
         <aside className="settings-side">
-          <article className="card account-card"><span className="avatar large">{preferences.preferredName.slice(0, 1).toUpperCase()}</span><h2>{preferences.preferredName}</h2><p>{mode === "demo" ? "Demo explorer" : profile?.email}</p><span className="account-status"><i /> {mode === "firebase" ? "Firebase sync active" : "Private device demo"}</span></article>
+          <article className="card account-card"><span className="avatar large">{displayName.slice(0, 1).toUpperCase()}</span><h2>{displayName}</h2><p>{mode === "demo" ? "Demo explorer" : profile?.email}</p><span className="account-status"><i /> {mode === "firebase" && accountStatus === "ready" ? "Firebase sync active" : "Private device demo"}</span></article>
           <article className="card side-links"><a href="/export"><Download /> Export your data <ChevronRight /></a><a href="/privacy"><ShieldCheck /> Privacy & disclaimer <ChevronRight /></a></article>
           <article className="card danger-zone"><h2>Data controls</h2><button onClick={() => setConfirm("data")}><Trash2 /> Delete all tracking data</button>{mode === "firebase" && <button onClick={() => setConfirm("account")}><UserRound /> Delete account</button>}<button onClick={() => void logout()}><LogOut /> Log out</button></article>
           <p className="version">Rhythm v1.0.0 · Built for private awareness</p>
