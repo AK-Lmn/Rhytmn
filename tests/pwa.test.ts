@@ -91,6 +91,30 @@ describe("critical mobile shell", () => {
     expect(css).toContain("body:has(input:focus, textarea:focus, select:focus) .bottom-nav");
   });
 
+  it("uses one safe-area-aware mobile header height for the fixed bar and content offset", async () => {
+    const css = await readFile("app/globals.css", "utf8");
+    const targetWidths = [320, 360, 375, 390, 412, 430];
+
+    expect(targetWidths.every((width) => width <= 900)).toBe(true);
+    expect(css).toContain("--mobile-header-row-height: 66px");
+    expect(css).toContain(
+      "--mobile-header-height: calc(var(--mobile-header-row-height) + env(safe-area-inset-top, 0px))",
+    );
+    expect(css).toMatch(
+      /\.app-frame\s*\{[^}]*padding:\s*var\(--mobile-header-height\)/,
+    );
+    expect(css).toMatch(
+      /\.mobile-topbar\s*\{[^}]*height:\s*var\(--mobile-header-height\)/,
+    );
+    expect(css).toContain(
+      "padding: env(safe-area-inset-top, 0px) max(18px, env(safe-area-inset-right)) 0",
+    );
+    expect(css).toContain(
+      ".mobile-topbar .logo { height: var(--mobile-header-row-height)",
+    );
+    expect(css).not.toMatch(/\.page\s*\{[^}]*safe-area-inset-top/);
+  });
+
   it("does not expose the removed export route in the application shell", async () => {
     const [routePage, settings] = await Promise.all([
       readFile("app/components/route-page.tsx", "utf8"),
