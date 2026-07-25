@@ -2,6 +2,7 @@
 
 import { Download, RefreshCw, WifiOff, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { checkBrowserConnectivity } from "../lib/connectivity";
 
 interface InstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -16,18 +17,52 @@ function isStandalone() {
 export function PwaLifecycle() {
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [updateWorker, setUpdateWorker] = useState<ServiceWorker | null>(null);
-  const [online, setOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
+  const [online, setOnline] = useState(true);
   const [installDismissed, setInstallDismissed] = useState(false);
   const refreshing = useRef(false);
 
   useEffect(() => {
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
+    let active = true;
+    let connectivityVersion = 0;
+
+    const verifyConnectivity = async (showOfflineOnFailure: boolean) => {
+      const version = ++connectivityVersion;
+      const reachable = await checkBrowserConnectivity();
+      if (!active || version !== connectivityVersion) return;
+      if (reachable) setOnline(true);
+      else if (showOfflineOnFailure) setOnline(false);
+    };
+    const onOnline = () => {
+      connectivityVersion += 1;
+      setOnline(true);
+      void verifyConnectivity(false);
+    };
+    const onOffline = () => {
+      connectivityVersion += 1;
+      setOnline(false);
+    };
+    const recheck = () => void verifyConnectivity(true);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") recheck();
+    };
+
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    window.addEventListener("focus", recheck);
+    window.addEventListener("pageshow", recheck);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    const interval = window.setInterval(recheck, 15_000);
+    recheck();
+
     return () => {
+      active = false;
+      connectivityVersion += 1;
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
+      window.removeEventListener("focus", recheck);
+      window.removeEventListener("pageshow", recheck);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.clearInterval(interval);
     };
   }, []);
 
