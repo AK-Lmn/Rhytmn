@@ -3,7 +3,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { createDemoLogs } from "../data/demo";
-import { DEFAULT_PREFERENCES, DEMO_PREFERENCES } from "../lib/constants";
+import {
+  DEFAULT_PREFERENCES,
+  DEMO_PREFERENCES,
+  mergeSupportedPreferences,
+} from "../lib/constants";
 import type { HealthLog, Preferences, UserProfile } from "../types";
 
 export type AccountStatus = "checking" | "signedOut" | "loading" | "ready" | "error";
@@ -39,7 +43,10 @@ export function sanitizePersistedSession(value: unknown): Partial<AppState> {
     mode: "demo",
     accountStatus: "ready",
     profile: persisted.profile,
-    preferences: { ...DEMO_PREFERENCES, ...persisted.preferences, preferredName: "Alex" },
+    preferences: {
+      ...mergeSupportedPreferences(DEMO_PREFERENCES, persisted.preferences),
+      preferredName: "Alex",
+    },
     logs: Array.isArray(persisted.logs) ? persisted.logs : [],
   };
 }

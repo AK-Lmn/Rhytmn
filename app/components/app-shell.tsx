@@ -25,7 +25,6 @@ const nav = [
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const mode = useAppStore((state) => state.mode);
-  const preferences = useAppStore((state) => state.preferences);
 
   return (
     <div className="app-frame">
@@ -55,7 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <a href="/privacy" aria-label="Privacy settings"><LockKeyhole size={20} /></a>
       </div>
 
-      <main className={preferences.privateMode ? "private-blur" : ""}>{children}</main>
+      <main>{children}</main>
 
       <nav className="bottom-nav" aria-label="Main navigation">
         {nav.map((item) => {

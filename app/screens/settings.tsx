@@ -1,7 +1,7 @@
 "use client";
 
 import { deleteUser, signOut } from "firebase/auth";
-import { BellRing, ChevronRight, Database, Download, KeyRound, LogOut, Moon, Palette, ShieldCheck, Sun, Trash2, UserRound } from "lucide-react";
+import { BellRing, ChevronRight, Database, LogOut, Moon, Palette, ShieldCheck, Sun, Trash2, UserRound } from "lucide-react";
 import { useState } from "react";
 import { ConfirmDialog, PageHeader } from "../components/ui";
 import { auth } from "../lib/firebase";
@@ -82,14 +82,6 @@ export function SettingsScreen() {
           </article>
 
           <article className="settings-card card">
-            <div className="settings-title"><span><ShieldCheck /></span><div><h2>Privacy</h2><p>Extra controls for sensitive screens.</p></div></div>
-            <label className="toggle-row"><span><strong>Private mode</strong><small>Blur dashboard content until you turn this off.</small></span><input type="checkbox" checked={preferences.privateMode} onChange={(event) => void update({ privateMode: event.target.checked })} /></label>
-            <label className="toggle-row"><span><strong>Hide dashboard details</strong><small>Use generic metric labels in shared spaces.</small></span><input type="checkbox" checked={preferences.hideDashboardDetails} onChange={(event) => void update({ hideDashboardDetails: event.target.checked })} /></label>
-            <label className="toggle-row"><span><strong>PIN lock interface</strong><small>UI preference only; device authentication is recommended.</small></span><input type="checkbox" checked={preferences.pinEnabled} onChange={(event) => void update({ pinEnabled: event.target.checked })} /></label>
-            <a className="settings-link" href="/privacy"><KeyRound /> Read the privacy promise <ChevronRight /></a>
-          </article>
-
-          <article className="settings-card card">
             <div className="settings-title"><span><Database /></span><div><h2>Format & units</h2><p>Control how your records appear.</p></div></div>
             <div className="form-row two"><label>Week starts<select value={preferences.weekStartsOn} onChange={(event) => void update({ weekStartsOn: Number(event.target.value) as 0 | 1 })}><option value={1}>Monday</option><option value={0}>Sunday</option></select></label><label>Date format<select value={preferences.dateFormat} onChange={(event) => void update({ dateFormat: event.target.value as Preferences["dateFormat"] })}><option value="MMM d, yyyy">Jul 24, 2026</option><option value="dd/MM/yyyy">24/07/2026</option><option value="MM/dd/yyyy">07/24/2026</option></select></label></div>
             <label>Measurement units<select value={preferences.units} onChange={(event) => void update({ units: event.target.value as Preferences["units"] })}><option value="metric">Metric (ml)</option><option value="imperial">Imperial (fl oz)</option></select></label>
@@ -98,7 +90,7 @@ export function SettingsScreen() {
 
         <aside className="settings-side">
           <article className="card account-card"><span className="avatar large">{displayName.slice(0, 1).toUpperCase()}</span><h2>{displayName}</h2><p>{mode === "demo" ? "Demo explorer" : profile?.email}</p><span className="account-status"><i /> {mode === "firebase" && accountStatus === "ready" ? "Firebase sync active" : "Private device demo"}</span></article>
-          <article className="card side-links"><a href="/export"><Download /> Export your data <ChevronRight /></a><a href="/privacy"><ShieldCheck /> Privacy & disclaimer <ChevronRight /></a></article>
+          <article className="card side-links"><a href="/privacy"><ShieldCheck /> Privacy & disclaimer <ChevronRight /></a></article>
           <article className="card danger-zone"><h2>Data controls</h2><button onClick={() => setConfirm("data")}><Trash2 /> Delete all tracking data</button>{mode === "firebase" && <button onClick={() => setConfirm("account")}><UserRound /> Delete account</button>}<button onClick={() => void logout()}><LogOut /> Log out</button></article>
           <p className="version">Rhythm v1.0.0 · Built for private awareness</p>
         </aside>

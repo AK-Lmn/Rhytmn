@@ -30,6 +30,6 @@ describe("Vercel build configuration", () => {
   it("keeps deployment artifacts and environment files out of Git", async () => {
     const gitignore = await readFile(".gitignore", "utf8");
     expect(gitignore).toMatch(/^\.env\*$/m);
-    expect(gitignore).toMatch(/^\.vercel$/m);
+    expect(gitignore).toMatch(/^\/?\.vercel\/?$/m);
   });
 });

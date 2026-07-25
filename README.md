@@ -1,98 +1,114 @@
-# vinext-starter
+# Rhythm
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+Rhythm is a private, mobile-first wellness tracker for recording bowel movements, urination, hydration, symptoms, notes, and daily check-ins. It turns user-entered records into descriptive history and insights without diagnosing medical conditions.
 
-## Prerequisites
+Live app: [https://rhytmn.vercel.app](https://rhytmn.vercel.app)
 
-- Node.js `>=22.13.0`
+## Main features
 
-## Quick Start
+- Firebase email/password and Google authentication
+- Per-user Firestore profile, settings, and health-log synchronization
+- Bowel, urination, hydration, symptom/note, and daily check-in forms
+- Dashboard, calendar history, entry details, and descriptive insights
+- Explicit fictional demo mode with device-local data
+- Responsive mobile navigation and touch-friendly forms
+- Installable PWA with an offline shell, update prompts, and safe static-asset caching
+- Light, dark, and system themes
+
+## Tech stack
+
+- Next.js App Router with React and TypeScript
+- Vinext and Vite for the regular local/production build
+- Firebase Authentication and Cloud Firestore
+- Zustand for client session and explicit demo persistence
+- React Hook Form and Zod
+- Recharts and date-fns
+- Vitest and ESLint
+- Vercel for production hosting
+
+## Local setup
+
+Requirements:
+
+- Node.js 22.13 or newer
+- A Firebase web application with Authentication and Firestore enabled
+
+Install dependencies and create a local environment file:
 
 ```bash
-npm install
-npm run dev
-npm run build
+npm ci
+copy .env.example .env.local
 ```
 
-This starter does not use `wrangler.jsonc`.
+Fill in `.env.local` with the public Firebase web configuration for your project. Do not commit that file.
 
-## Included Shape
+## Firebase configuration
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+Enable the sign-in providers used by the app in Firebase Authentication and deploy the repository’s `firestore.rules` to the matching Firebase project.
 
-## Workspace Auth Headers
+Required environment variables:
 
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```text
+NEXT_PUBLIC_FIREBASE_API_KEY
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+NEXT_PUBLIC_FIREBASE_PROJECT_ID
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+NEXT_PUBLIC_FIREBASE_APP_ID
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+Firebase web configuration identifies the public Firebase application. Service-account JSON, private keys, admin credentials, and deployment tokens must never be added to this repository.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+## Commands
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+```bash
+npm run dev          # Local Vinext development server
+npm run typecheck    # TypeScript validation
+npm run lint         # ESLint
+npm test             # Vitest regression suite
+npm run build        # Vinext production build
+npm run vercel-build # Next.js-compatible Vercel build adapter
+npm run start        # Start the Vinext production server locally
+```
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+## Vercel deployment
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+The repository is linked to the `rhytmn` Vercel project. `vercel.json` keeps Vercel on its native Next.js builder, while `scripts/vercel-next-build.mjs` preserves the regular Vinext build and supplies the verified Vercel-compatible build path. Production environment variables must be configured in Vercel rather than committed.
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+For a local deployment check:
 
-## Useful Commands
+```bash
+npx vercel build
+```
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+On Windows, Vercel’s Next.js adapter requires permission to create symbolic links. Enable Windows Developer Mode or run the command from an elevated shell if packaging stops with an `EPERM` symlink error. This OS requirement does not apply to Vercel’s Linux production builders.
 
-## Learn More
+Pushing `main` triggers the production deployment.
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+## PWA behavior
+
+The manifest is generated by `app/manifest.ts`. App icons live under `public/icons/`, the service worker is `public/sw.js`, and `public/offline.html` provides the offline fallback. The worker caches only the public app shell and same-origin static assets; authenticated Firebase responses and private health data are not cached. Explicit demo records and local form drafts continue to work without a network connection.
+
+## Privacy and medical disclaimer
+
+Rhythm has no public profiles or social feed. Authenticated data is stored under the signed-in Firebase user’s document hierarchy. Demo data is fictional and stays on the device.
+
+Rhythm is for personal awareness only. Its summaries and insights are descriptive, not medical diagnoses, predictions, or treatment recommendations. Seek qualified medical care for health concerns or urgent symptoms.
+
+## Project structure
+
+```text
+app/
+  components/     Shared shell, controls, charts, and PWA lifecycle
+  hooks/          Device-local draft support
+  lib/            Firebase, Firestore, validation, safety, and insights
+  screens/        Route-level application screens
+  store/          Session, profile, preferences, demo data, and logs
+public/
+  icons/          Install and touch icons
+  offline.html    Offline fallback
+  sw.js           Service worker
+scripts/          PWA asset generation and Vercel build adapter
+tests/            Regression, PWA, and deployment tests
+worker/           Vinext local-build worker entry point
+```

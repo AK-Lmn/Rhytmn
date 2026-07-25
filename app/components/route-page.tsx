@@ -18,12 +18,11 @@ const CheckInFormScreen = dynamic(() => import("../screens/log-forms").then((mod
 const EntryDetailScreen = dynamic(() => import("../screens/entry-detail").then((module) => module.EntryDetailScreen));
 const InsightsScreen = dynamic(() => import("../screens/insights").then((module) => module.InsightsScreen));
 const SettingsScreen = dynamic(() => import("../screens/settings").then((module) => module.SettingsScreen));
-const ExportScreen = dynamic(() => import("../screens/export").then((module) => module.ExportScreen));
 
 export type AppRoute =
   | "landing" | "login" | "register" | "forgot" | "onboarding" | "home"
   | "history" | "add" | "poop" | "pee" | "water" | "note" | "checkin"
-  | "entry" | "insights" | "settings" | "privacy" | "export";
+  | "entry" | "insights" | "settings" | "privacy";
 
 export function RoutePage({ route }: { route: AppRoute }) {
   if (route === "landing") return <LandingScreen />;
@@ -42,8 +41,7 @@ export function RoutePage({ route }: { route: AppRoute }) {
     route === "checkin" ? <CheckInFormScreen /> :
     route === "entry" ? <EntryDetailScreen /> :
     route === "insights" ? <InsightsScreen /> :
-    route === "settings" ? <SettingsScreen /> :
-    <ExportScreen />;
+    <SettingsScreen />;
 
   return <AppShell>{screen}</AppShell>;
 }

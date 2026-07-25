@@ -1,4 +1,4 @@
-import { createAccountPreferences } from "./constants";
+import { createAccountPreferences, mergeSupportedPreferences } from "./constants";
 import type { Preferences, UserProfile } from "../types";
 
 export interface AuthenticatedIdentity {
@@ -84,8 +84,10 @@ export function resolveAuthenticatedAccount(
   return {
     profile,
     preferences: {
-      ...createAccountPreferences(preferredName),
-      ...stored.preferences,
+      ...mergeSupportedPreferences(
+        createAccountPreferences(preferredName),
+        stored.preferences,
+      ),
       preferredName,
     },
     isNew,

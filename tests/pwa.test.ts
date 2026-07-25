@@ -91,12 +91,15 @@ describe("critical mobile shell", () => {
     expect(css).toContain("body:has(input:focus, textarea:focus, select:focus) .bottom-nav");
   });
 
-  it("uses a mobile card layout for exported records", async () => {
-    const [screen, css] = await Promise.all([
-      readFile("app/screens/export.tsx", "utf8"),
-      readFile("app/globals.css", "utf8"),
+  it("does not expose the removed export route in the application shell", async () => {
+    const [routePage, settings] = await Promise.all([
+      readFile("app/components/route-page.tsx", "utf8"),
+      readFile("app/screens/settings.tsx", "utf8"),
     ]);
-    expect(screen).toContain('data-label="Date & time"');
-    expect(css).toContain("content: attr(data-label)");
+    expect(routePage).not.toMatch(/ExportScreen|route="export"|\/export/);
+    expect(settings).not.toMatch(
+      /Private mode|Hide dashboard details|PIN lock interface|Export your data/,
+    );
+    await expect(access("app/export/page.tsx")).rejects.toThrow();
   });
 });

@@ -48,7 +48,7 @@ export function InsightsScreen() {
 
   return (
     <div className="page insights-page">
-      <PageHeader eyebrow="Patterns, not diagnoses" title="Insights" intro="Friendly observations drawn only from what you record." actions={<a className="button secondary" href="/export">Export report</a>} />
+      <PageHeader eyebrow="Patterns, not diagnoses" title="Insights" intro="Friendly observations drawn only from what you record." />
       <div className="insights-disclaimer"><Info /><p><strong>For personal awareness</strong>These are descriptive patterns, not diagnoses, predictions, or treatment advice.</p></div>
 
       <section className="insight-stats">

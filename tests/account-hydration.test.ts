@@ -23,8 +23,9 @@ const kim: StoredAccount = {
     preferredName: "Alex",
     waterGoalMl: 2800,
     theme: "dark",
+    privateMode: true,
   },
-};
+} as StoredAccount;
 
 function repositoryWith(record: StoredAccount | null): AccountRepository {
   return {
@@ -52,6 +53,7 @@ describe("authenticated account hydration", () => {
     expect(secondSignIn.preferences.preferredName).toBe("Kim");
     expect(secondSignIn.preferences.waterGoalMl).toBe(2800);
     expect(secondSignIn.preferences.theme).toBe("dark");
+    expect(secondSignIn.preferences).not.toHaveProperty("privateMode");
     expect(repository.createIfAbsent).not.toHaveBeenCalled();
   });
 

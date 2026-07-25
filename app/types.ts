@@ -74,9 +74,6 @@ export interface Preferences {
   reminders: boolean;
   reminderTime: string;
   discreetNotifications: boolean;
-  privateMode: boolean;
-  hideDashboardDetails: boolean;
-  pinEnabled: boolean;
   weekStartsOn: 0 | 1;
   dateFormat: "MMM d, yyyy" | "dd/MM/yyyy" | "MM/dd/yyyy";
   units: "metric" | "imperial";

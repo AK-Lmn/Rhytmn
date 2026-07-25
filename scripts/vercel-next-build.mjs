@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDirectory, "..");
@@ -11,16 +11,7 @@ const nextPackage = moduleResolver.resolve("next/package.json", {
 });
 const nextCli = path.join(path.dirname(nextPackage), "dist", "bin", "next");
 const env = { ...process.env };
-const nodeArgs = [];
-
-if (process.platform === "win32") {
-  const loader = pathToFileURL(
-    path.join(scriptDirectory, "vercel-windows-register.mjs"),
-  ).href;
-  nodeArgs.push("--import", loader);
-}
-
-nodeArgs.push(nextCli, "build");
+const nodeArgs = [nextCli, "build"];
 
 const child = spawn(process.execPath, nodeArgs, {
   cwd: projectRoot,

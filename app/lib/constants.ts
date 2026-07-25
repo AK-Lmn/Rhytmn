@@ -70,9 +70,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
   reminders: true,
   reminderTime: "19:00",
   discreetNotifications: true,
-  privateMode: false,
-  hideDashboardDetails: false,
-  pinEnabled: false,
   weekStartsOn: 1,
   dateFormat: "MMM d, yyyy",
   units: "metric",
@@ -86,4 +83,15 @@ export const DEMO_PREFERENCES: Preferences = {
 
 export function createAccountPreferences(preferredName: string): Preferences {
   return { ...DEFAULT_PREFERENCES, preferredName };
+}
+
+export function mergeSupportedPreferences(
+  defaults: Preferences,
+  stored?: Partial<Preferences>,
+): Preferences {
+  if (!stored) return { ...defaults };
+  const supported = Object.fromEntries(
+    Object.entries(stored).filter(([key]) => key in DEFAULT_PREFERENCES),
+  ) as Partial<Preferences>;
+  return { ...defaults, ...supported };
 }
